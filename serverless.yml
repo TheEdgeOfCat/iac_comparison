@@ -1,0 +1,76 @@
+service: SmsBridge
+org: smartcat
+
+custom:
+  configBucket: edifice-config
+  pythonVersion: 3.8
+  pythonRequirements:
+    dockerizePip: true
+    dockerImage: python:${self:custom.pythonVersion}-slim
+
+provider:
+  name: aws
+  runtime: python${self:custom.pythonVersion}
+  region: us-east-1
+  stage: dev
+  tracing:
+    lambda: true
+  environment:
+    edifice_bridge_env: PROD
+    edifice_bridge_config: s3://${self:custom.configBucket}/rt/bridge.json
+    state_dynamodb_table: !Ref BridgeStateTable
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:GetObject
+      Resource:
+        - "arn:aws:s3:::${self:custom.configBucket}/*"
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:Scan
+      Resource:
+        - !GetAtt BridgeStateTable.Arn
+
+plugins:
+  - serverless-python-requirements
+
+package:
+  exclude:
+    - 'node_modules/**'
+    - '.mypy_cache/**'
+    - '**/__pycache__/**'
+
+functions:
+  TelegramMessageReceiver:
+    handler: aws_lambda.receive_telegram.handler
+    memorySize: 128
+    events:
+      - http:
+          path: telegram
+          method: post
+
+  TwilioMessageReceiver:
+    handler: aws_lambda.receive_twilio.handler
+    memorySize: 128
+    events:
+      - http:
+          path: twilio
+          method: post
+
+resources:
+  Resources:
+    BridgeStateTable:
+      Type: AWS::DynamoDB::Table
+      UpdateReplacePolicy: Retain
+      DeletionPolicy: Retain
+      Properties:
+        TableName: sms-bridge
+        KeySchema:
+          - AttributeName: user_number
+            KeyType: HASH
+        AttributeDefinitions:
+          - AttributeName: user_number
+            AttributeType: S
+        BillingMode: PAY_PER_REQUEST

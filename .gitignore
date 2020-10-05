@@ -1,0 +1,55 @@
+# IDE config
+.idea
+.vscode
+
+# Tools
+.mypy_cache
+.coverage
+.pytest_cache
+.DS_Store
+
+# Artifacts
+output
+build
+notes
+
+# Configuration files
+dev_config.json
+
+# Distribution / packaging
+.Python
+env/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Serverless
+.serverless/
+node_modules/
+.requirements.zip
+unzip_requirements.py
+
+# Configuration folders
+occupancy_config/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtualenvironment
+.venv
+
+# CDK Context & Staging files
+.cdk.staging/
+cdk.out/
