@@ -1,4 +1,4 @@
-# Edifice Twilio-Telegram bridge
+# Twilio-Telegram bridge
 
 The `cdk.json` file tells the CDK Toolkit how to execute your app.
 

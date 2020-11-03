@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "edifice_bridge"
+name = "bridge"
 version = "0.1.0"
 description = "Edifice Twilio-Telegram bridge"
 authors = ["Pavle Portic <pavle.portic@smartcat.io>"]

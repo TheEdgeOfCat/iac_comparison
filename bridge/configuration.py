@@ -4,7 +4,7 @@ import logging
 import os
 from typing import Any, Dict, Optional
 
-from edifice_bridge.fileio.retrieval import get_retrieval_factory
+from bridge.fileio.retrieval import get_retrieval_factory
 
 
 log = logging.getLogger(__name__)

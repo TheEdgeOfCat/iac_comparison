@@ -1,12 +1,13 @@
-service: SmsBridge
-org: smartcat
+service: SMSBridge
 
 custom:
-  configBucket: edifice-config
+  stage: ${opt:stage, self:provider.stage}
+  configBucket: smartcat-sms-bridge-config
   pythonVersion: 3.8
   pythonRequirements:
     dockerizePip: true
     dockerImage: python:${self:custom.pythonVersion}-slim
+    usePoetry: false
 
 provider:
   name: aws
@@ -16,8 +17,8 @@ provider:
   tracing:
     lambda: true
   environment:
-    edifice_bridge_env: PROD
-    edifice_bridge_config: s3://${self:custom.configBucket}/rt/bridge.json
+    bridge_env: ${self:custom.stage}
+    bridge_config: s3://${self:custom.configBucket}/bridge.json
     state_dynamodb_table: !Ref BridgeStateTable
 
   iamRoleStatements:
@@ -41,6 +42,23 @@ package:
     - 'node_modules/**'
     - '.mypy_cache/**'
     - '**/__pycache__/**'
+    - 'cdk/**'
+    - 'cdk.out/**'
+    - 'presentation/**'
+    - 'tfcdk/**'
+    - '.venv/**'
+    - 'cdk_app.py'
+    - 'cdk.json'
+    - 'Dockerfile'
+    - 'Makefile'
+    - 'package.json'
+    - 'package-lock.json'
+    - 'poetry.lock'
+    - 'poetry.toml'
+    - 'pyproject.toml'
+    - 'README.md'
+    - 'serverless.yml'
+    - 'setup.cfg'
 
 functions:
   TelegramMessageReceiver:
@@ -66,7 +84,7 @@ resources:
       UpdateReplacePolicy: Retain
       DeletionPolicy: Retain
       Properties:
-        TableName: sms-bridge
+        TableName: sms-bridge-${self:custom.stage}
         KeySchema:
           - AttributeName: user_number
             KeyType: HASH

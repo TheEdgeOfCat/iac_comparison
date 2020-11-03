@@ -2,7 +2,7 @@ from typing import Iterable
 
 from boto3.dynamodb.conditions import Attr
 
-from edifice_bridge.dynamodb_service import DynamoDBService
+from bridge.dynamodb_service import DynamoDBService
 
 
 class StateRepository():

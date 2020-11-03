@@ -1,4 +1,4 @@
-NAME = edifice_bridge
+NAME = bridge
 LAMBDA_FUNCTIONS = aws_lambda
 CDK = cdk
 

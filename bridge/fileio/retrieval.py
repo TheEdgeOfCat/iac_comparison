@@ -6,8 +6,8 @@ from contextlib import contextmanager
 from tempfile import TemporaryDirectory
 from typing import Any, Dict, Generator, Optional
 
-from edifice_bridge.fileio.path import PathType, S3Path, get_path_type
-from edifice_bridge.s3_service import S3Service, create_s3_service
+from bridge.fileio.path import PathType, S3Path, get_path_type
+from bridge.s3_service import S3Service, create_s3_service
 
 
 log = logging.getLogger(__name__)

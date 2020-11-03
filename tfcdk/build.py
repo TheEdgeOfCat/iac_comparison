@@ -48,8 +48,8 @@ def package_function() -> None:
         ignore=ignore_handler,
     )
     shutil.copytree(
-        '../edifice_bridge',
-        os.path.join(FUNCTION_PACKAGE_DIR, 'edifice_bridge'),
+        '../bridge',
+        os.path.join(FUNCTION_PACKAGE_DIR, 'bridge'),
         dirs_exist_ok=True,
         ignore=ignore_handler,
     )

@@ -6,7 +6,13 @@ from hashlib import sha256
 from typing import Dict, List
 
 from constructs import Construct
-from cdktf import App, TerraformOutput, TerraformStack  # type: ignore
+from cdktf import (  # type: ignore
+    App,
+    S3Backend,
+    TerraformOutput,
+    TerraformResourceLifecycle,
+    TerraformStack,
+)
 
 from build import package_assets  # type: ignore
 from imports.aws import (  # type: ignore
@@ -37,6 +43,9 @@ class SMSBridgeStack(TerraformStack):
     def create_dynamodb_table(self) -> None:
         self.dynamodb_table = DynamodbTable(
             self, 'sms_bridge_state_dynamodb_table',
+            lifecycle=TerraformResourceLifecycle(
+                prevent_destroy=True,
+            ),
             name='sms-bridge-state',
             hash_key='user_number',
             attribute=[
@@ -125,50 +134,57 @@ class SMSBridgeStack(TerraformStack):
 
         return role
 
-    def create_lambda_functions(self) -> None:
+    def create_lambda_function(self, path: str) -> LambdaFunction:
+        function_name: str = f'{path.title()}Receiver'
+        CloudwatchLogGroup(
+            self, f'{path}_receive_log_group',
+            name=f'/aws/lambda/{function_name}',
+            retention_in_days=14,
+        )
+        return LambdaFunction(
+            self, f'{path}_receive_function',
+            function_name=function_name,
+            handler=f'aws_lambda.receive_{path}.handler',
+            runtime='python3.8',
+            role=self.lambda_execution_role.arn,
+            environment=[self.lambda_environment],
+            layers=[self.dependency_layer.arn],
+            memory_size=128,
+            timeout=30,
+            tracing_config=[self.lambda_tracing_config],
+            s3_bucket=self.function_package.bucket,
+            s3_key=self.function_package.key,
+            source_code_hash=self.function_source_hash,
+        )
+
+    def create_lambda_setup(self) -> None:
         layer_package_file, function_package_file = package_assets()
         self.create_dependency_layer(layer_package_file)
-        lambda_environment = LambdaFunctionEnvironment(variables={
-            'edifice_bridge_env': 'PROD',
-            'edifice_bridge_config':
-                f's3://{self.config_bucket.bucket}/bridge.json',
-            'state_dynamodb_table': self.dynamodb_table.name,
-        })
-        lambda_tracing_config = LambdaFunctionTracingConfig(mode='Active')
-        function_package = S3BucketObject(
+        self.lambda_environment: LambdaFunctionEnvironment = \
+            LambdaFunctionEnvironment(variables={
+                'bridge_env': 'PROD',
+                'bridge_config':
+                    f's3://{self.config_bucket.bucket}/bridge.json',
+                'state_dynamodb_table': self.dynamodb_table.name,
+            })
+        self.lambda_tracing_config: LambdaFunctionTracingConfig = \
+            LambdaFunctionTracingConfig(mode='Active')
+        self.function_package: S3BucketObject = S3BucketObject(
             self, 'function_deployment_package',
             bucket=self.lambda_bucket.bucket,
             key=f'sms_bridge/{os.path.basename(function_package_file)}',
             source=function_package_file,
         )
-        lambda_execution_role = self.create_lambda_role()
+        self.lambda_execution_role: IamRole = self.create_lambda_role()
         with open(function_package_file, 'rb') as f:
             hash_bytes = sha256(f.read()).digest()
-            source_hash = base64.b64encode(hash_bytes).decode('UTF-8')
+            self.function_source_hash: str = base64.b64encode(
+                hash_bytes).decode('UTF-8')
 
-        self.functions: Dict[str, LambdaFunction] = {}
-        for path in ('telegram', 'twilio'):
-            function = LambdaFunction(
-                self, f'{path}_receive_function',
-                function_name=f'{path.title()}Receiver',
-                handler=f'aws_lambda.receive_{path}.handler',
-                runtime='python3.8',
-                role=lambda_execution_role.arn,
-                environment=[lambda_environment],
-                layers=[self.dependency_layer.arn],
-                memory_size=128,
-                timeout=30,
-                tracing_config=[lambda_tracing_config],
-                s3_bucket=function_package.bucket,
-                s3_key=function_package.key,
-                source_code_hash=source_hash,
-            )
-            self.functions[path] = function
-            CloudwatchLogGroup(
-                self, f'{path}_receive_log_group',
-                name=f'/aws/lambda/{function.function_name}',
-                retention_in_days=14,
-            )
+        self.functions: Dict[str, LambdaFunction] = {
+            path: self.create_lambda_function(path)
+            for path in ('telegram', 'twilio')
+        }
 
     def create_api_gateway(self) -> None:
         api = ApiGatewayRestApi(
@@ -229,6 +245,12 @@ class SMSBridgeStack(TerraformStack):
         self.stage: str = 'dev'
 
         AwsProvider(self, 'aws', region=self.region)
+        S3Backend(
+            self,
+            bucket='smartcat-tfstate',
+            key='sms-bridge.tfstate',
+            region=self.region,
+        )
         caller_id = DataAwsCallerIdentity(self, 'caller_id')
         self.account_id = caller_id.account_id
         self.config_bucket = DataAwsS3Bucket(
@@ -241,7 +263,7 @@ class SMSBridgeStack(TerraformStack):
         )
 
         self.create_dynamodb_table()
-        self.create_lambda_functions()
+        self.create_lambda_setup()
         self.create_api_gateway()
         self.create_outputs()
 

@@ -2,9 +2,9 @@ import logging
 import os
 from typing import Any, Dict
 
-from edifice_bridge.app import create_app
-from edifice_bridge.providers import Providers, create_message_provider
-from edifice_bridge.repository import StateRepository
+from bridge.app import create_app
+from bridge.providers import Providers, create_message_provider
+from bridge.repository import StateRepository
 
 
 app = create_app()

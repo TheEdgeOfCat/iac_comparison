@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # -- Project information -----------------------------------------------------
-project = 'edifice-corb serverless architecture'
+project = 'AWS CDK vs Serverless framework vs TF CDK'
 copyright = '2020, Pavle Portic'
 author = 'Pavle Portic'
 version = '0.1.0'

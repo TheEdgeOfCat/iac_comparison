@@ -4,8 +4,8 @@ import os
 from enum import Enum
 from typing import Any, Dict
 
-from edifice_bridge.configuration import Configuration, load_config
-from edifice_bridge.logger import initialize_logger
+from bridge.configuration import Configuration, load_config
+from bridge.logger import initialize_logger
 
 
 log = logging.getLogger(__name__)
@@ -13,9 +13,8 @@ log = logging.getLogger(__name__)
 
 class Environment(Enum):
     """ Defines an application environment. """
-    PROD = 0
-    DEV = 1
-    TEST = 2
+    prod = 0
+    dev = 1
 
 
 class App:
@@ -40,10 +39,10 @@ class App:
 def create_app() -> App:
     """ Initializes an application. """
     app_env = Environment[
-        os.environ.get('edifice_bridge_env', 'DEV')
+        os.environ.get('bridge_env', 'dev')
     ]
 
-    config_path = os.environ.get('edifice_bridge_config', None)
+    config_path = os.environ.get('bridge_config', None)
     config = load_config(config_path)
     initialize_logger(config.config)
 
